@@ -71,6 +71,33 @@ agent 根据以下维度判断故事体量，**先推荐**单元数和时长，�
   "episode_duration_seconds": 600,
   "style": "日系动画 / 2D赛璐珞 / 柔和光影",
   "style_keywords": ["日系动画", "2D赛璐珞", "柔和光影"],
+  "style_negative": ["无3D渲染感", "无厚涂笔触", "无照片级写实皮肤", "无AI塑料感"],
+  "style_baseline": {
+    "palette": { "lock": "L1", "value": "中饱和暖木色 60% + 窗外草绿 30%（S5）" },
+    "style": { "lock": "L1", "value": "日系2D赛璐璐 2~3 层硬边阴影（⑧ 块，媒介/线条/材质）" },
+    "pace": { "lock": "L1", "value": "on twos 12fps 抽帧感；对白 4~6s/镜（S8）" },
+    "negative": { "lock": "L1", "value": "style_negative 全量（⑨）" },
+    "lighting": { "lock": "L2", "value": "日戏 5500K 顶侧光，暗:亮 30:70±10（S5 档位）" },
+    "bgm": { "lock": "L2", "value": "情绪段静默 + 环境床；动作段鼓 + 弦重复动机（S7）" },
+    "sfx_bed": { "lock": "L2", "value": "环境床（风/水/room tone）（S7）" },
+    "camera": { "lock": "L3", "value": "固定中景 + 缓慢横摇；特写↔大远景交替（S3）" },
+    "composition": { "lock": "L3", "value": "180° 轴线，主体居中偏 1/3（S9）" },
+    "blocking": { "lock": "L3", "value": "对话 = 中景双人 + 过肩近景（S9）" }
+  },
+  "style_moments": [
+    {
+      "moment_id": "m01",
+      "beat_ref": "act_2 高潮 set piece",
+      "overrides": { "camera": "快推 5°/s + 低角度", "lighting": "单光源 3200K，暗:亮 70:30", "bgm": "弦乐齐奏爆发 cue", "fx": "粒子爆发（光点 20~30）" },
+      "basis": "情绪转折点 = 信念被推翻瞬间"
+    },
+    {
+      "moment_id": "m02",
+      "beat_ref": "act_1 origin 闪回",
+      "overrides": { "pace": "抽帧 12fps 抽帧感", "bgm": "静默（只留雨声）", "lighting": "冷 6500K 月光" },
+      "basis": "错误信念生根的瞬间（origin 标记）"
+    }
+  ],
   "series_logline": "少年捡到怀表后时间开始失控，最终面对命运的选择",
   "expansion_level": "L0",
   "gate": {
@@ -149,7 +176,7 @@ agent 根据以下维度判断故事体量，**先推荐**单元数和时长，�
       "title": "雨夜怀表",
       "logline": "少年在雨夜捡到会说话的猫，怀表开始倒转",
       "acts": [
-        { "act_id": "act_1", "label": "雨夜相遇", "shot_count_estimate": 25, "set_piece": "雨夜天台：主角追逐怀表阴影，时间在空中冻结" },
+        { "act_id": "act_1", "label": "雨夜相遇", "shot_count_estimate": 25, "set_piece": "雨夜天台：主角追逐怀表阴影，时间在空中冻结", "act_style": { "lighting": "夜戏雨档（钠灯 3000K + 冷蓝 6500K，暗:亮 65:35±10）", "bgm": "钢琴 + 环境床（雨声）" } },
         { "act_id": "act_2", "label": "怀表异响", "shot_count_estimate": 25 },
         { "act_id": "act_3", "label": "时间失控", "shot_count_estimate": 25 }
       ]
@@ -179,6 +206,9 @@ agent 根据以下维度判断故事体量，**先推荐**单元数和时长，�
 | `total_episodes` | 总单元数（单片项目 = 1，`episode_01` = 整部电影） |
 | `episode_duration_seconds` | 每单元目标时长（秒）；用于估算镜头数：`镜头数 ≈ 时长 / 8`（默认 8s/镜头）|
 | `series_logline` | 系列总主题（一句话，logline 公式见 Beat Sheet 规则）|
+| `style` / `style_keywords` / `style_negative` | 风格锁定（0a-1，2026-09-13 起）：`style` = 一句话风格名；`style_keywords` = 完整风格块（从 `素材库/风格提示词/` 对应条目整块回写，**非 4~6 关键词**）；`style_negative` = 风格负向（条目 ⑨ 字段）。所有图/视频提示词 ⑧⑨ 位逐字抄入，双层风格锁见 `production_guide.md` §2 |
+| `style_baseline` | 风格基线（0a-1 定，取风格块 S1~S9 默认值）：8 项各带 `lock` 标签（**L1 全片硬锁**：palette/style/pace 帧率画幅/negative；**L2 幕级锁**：lighting/bgm/sfx_bed/fx，幕内不变幕末回退；**L3 镜头级自由**：camera/composition/blocking，镜头可现场判断但取值在 L1/L2 范围内）；**所有镜头默认 = 基线，禁止发明表外风格参数** |
+| `style_moments[]` | 关键镜头风格表（0a-3/0b 定，对应 set piece/beat 标记）：`moment_id` / `beat_ref` / `overrides`（**只允许 L2/L3 项**，动 L1 = 越权 → 停 + 提请项目级决策）/ `basis`（对应哪个情绪转折点）；命中 moment 的镜头 = 基线 + moment 覆盖项，其余 = 纯基线 + L3 微调；④ 抽检分层：L1 批级硬检 / L2 幕末检 / L3 逐镜验收 |
 | `expansion_level` | 扩展等级 L0~L3（`story_expansion_guide.md` §1 判定结果）|
 | `gate` | 高概念门三测试结论（§2）；三项全过才进 0a-2 |
 | `theme_statement` | 主题论证："X 胜过 Y，因为……" + 价值极性对（§4）|
@@ -194,7 +224,7 @@ agent 根据以下维度判断故事体量，**先推荐**单元数和时长，�
 | `scene_distribution[].episodes` | 该场景出现的集数；参考图只在**首次出现的集**生成 |
 | `voice_profiles` | 角色音色档案：每个主要角色一条，`voice` 为音色规格（写进每句台词 prompt）；首单元定死后跨单元引用，**不逐单元重新决定**；推导依据 = 年龄 + personality + 初始 personality stage。**小角色例外**：出对白但非主要（对白 ≤2 句）的角色不进档案——① 现场一次性定 8 字内音色行直接写进台词行，同一角色跨镜头复用第一次定下的行 |
 | `episode_plan` | 每单元的分幕规划，长度必须 = `total_episodes` |
-| `episode_plan[].acts` | 该单元分幕列表；`shot_count_estimate` 建议 10~30；`set_piece` 为该幕招牌场面（一句话，§6.1，最黑暗幕可空） |
+| `episode_plan[].acts` | 该单元分幕列表；`shot_count_estimate` 建议 10~30；`set_piece` 为该幕招牌场面（一句话，§6.1，最黑暗幕可空）；`act_style`（可选，2026-09-13）= 该幕 **L2 档位声明**（lighting/bgm/sfx_bed/fx 任意子集，取自风格块 S5/S7/S6，幕内不变、幕末回退） |
 | `meta.total_shots_estimate` | 全项目预估总镜头数（≈ `total_episodes × 每单元平均镜头数`）|
 | `engine_check` | 系列引擎测试（`story_expansion_guide.md` §7.4/§7.5）：`pass/fail` + 事件种子表 + franchise 四要素（concept/conflict/theme/`story_pattern`——每单元重复的形状，一句话）+ `theme_proposition`（可辩的对立命题，禁单词主题）+ `pressure_drop`（闭合长篇：物质引擎失压的单元 = 结尾位置）；fail → 回 0a-2 |
 | `library_routing` | 0a-1 类型锁定 → 素材库文件路由（类型 → `素材库/` 子目录/文件列表，无命中 = 空数组）；素材库的**主动打开**只凭此字段 |
