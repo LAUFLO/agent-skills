@@ -40,9 +40,9 @@ description: AI 短片/叙事视频制作工作流总编排。负责阶段路由
 | P0 剧本开发 | 点子/粗糙剧本 | `sw-workflow`（按其阶段表：前提→结构→人物→场景清单→处理台本；剧集项目走 S0–S7 表，按需调 `sw-series-engine-bible`/`sw-chinese-series-practice`） | `01-plan/story-bible.md`（P0 单文件状态机）+ `01-plan/script-draft.md`（定稿分场大纲/处理台本） | P0 纪律跟 sw-workflow（创作主线不拆 subagent、一次性交付不建 bible、甲方格式优先）；每场有价值转折、人物/卡片数达标；用户确认"剧本够分镜了" |
 | P1 拆场 | 剧本（`01-plan/script-draft.md` 或用户提供） | leos（总导演+场记） | `01-plan/scene-XX/brief.md`（按 `templates/scene-brief.md` 填充）、`decisions.md` | 场次目的/主角/节奏/空间关系已锁定；用户逐场确认 |
 | P2 分镜锁定 | 场次包 | leos（表演/镜内/摄影三部门简报）+ shortfilm-prompt 的 `templates/project-planner.md` + `agnes-media-generator`（参考图生成） | `02-storyboard/` 三件套（按 shortfilm-prompt `project-planner` 的列结构）、`assets/manifest.md`（按本 skill `templates/asset-manifest.md` 填充） | 主体登记每个复现角色 ≥2 瑕疵锚点；氛围段落定稿；shotlist 每镜 Exit/Entry 对齐；全片 ≤8 镜、单镜 ≤15s（超出后重 roll 成功率崩塌、多段拼接误差累积，见 shortfilm-prompt cheatsheet）；参考图（如需）按 §7 规格生成（定妆照 / 场景图五件套）、subagent 质检合格并登记 manifest；用户确认可先生成首尾镜 |
-| P3 提示词编写 | 三件套 | shortfilm-prompt（5 阶段 + 7 硬规则） | `03-prompts/shot-XX-v001.md` | 每个提示词：主体描述从 subject-registry 复制、氛围段从 atmosphere-lock 复制；过 leos 校验脚本（若可用）+ shortfilm-prompt 30 秒清单；版本 vNNN 递增 |
+| P3 提示词编写 | 三件套 | shortfilm-prompt（5 阶段 + 7 硬规则） | `03-prompts/shot-XX-v001.md` | 每个提示词：主体描述从 subject-registry 复制、氛围段从 atmosphere-lock 复制；过 leos 校验脚本（若可用）+ shortfilm-prompt 30 秒清单；版本 vNNN 递增；提示词文件与 shotlist 行一对一（镜号即文件名），内容/运镜/时长与该 shotlist 行一致，改动画面内容先回 P2 改 shotlist 再递增版本，禁止在提示词里加 shotlist 之外的"戏" |
 | P4 生成与台账 | 提示词 | leos（场记 Take 登记 + 局部修复原则）+ `agnes-media-generator`（Agnes Video 2.5 Flash，调用纪律见 §7） | `04-takes/shot-XX/` 素材 + `take-ledger.md`（按 `templates/take-ledger.md` 填充） | 先生成首尾两镜锁观感，漂移即停；每镜登记提示词版本 / video_id / seconds / aspect_ratio / seed（如有）/ Take 结论；重 roll 预算 ≈ 5–10 倍终选镜数 |
-| P5 审稿修复 | 成片 | leos（六角色逐镜审稿） | `05-review/review.md`（按 `templates/review.md` 填充） | 审稿表为「角色 × 镜头 1..N」全覆盖，无问题的镜头也写"通过"；每镜有 保/过/修/废 结论；"修"的镜头走局部修复（一次只改一个变量） |
+| P5 审稿修复 | 成片 | leos（六角色逐镜审稿） | `05-review/review.md`（按 `templates/review.md` 填充） | 审稿表为「角色 × 镜头 1..N」全覆盖，无问题的镜头也写"通过"；每镜有 保/过/修/废 结论；"修"的镜头走局部修复（一次只改一个变量）；场记/连续性行必查三一致性：提示词文件 ↔ shotlist 行、提示词版本 ↔ take-ledger、素材 ↔ 场次 brief |
 
 **执行纪律**：每阶段开始时用 `skill` 工具显式加载对应子 skill，不凭记忆操作；阶段内子 skill 的规则优先于本 skill。各阶段产物文件按本 skill `templates/` 下对应模板填充（scene-brief / asset-manifest / take-ledger / review），不自创列结构。
 - P0 首会话只执行 sw-workflow 的"启动"一节 + 创建 `01-plan/story-bible.md`（一屏内，不确定项标"（待确认）"）即停——不在单会话跑完整阶段表（防上下文超载与静默断流），后续会话按 bible 的"下一步："推进
@@ -91,6 +91,7 @@ my-film/
 8. **输入/输出分离**：`02-storyboard/assets/` 只存喂给模型的参考图（输入端）；`04-takes/` 只存生成结果（输出端）；两边文件不互相挪动
 9. **P0 交接点**：分场大纲/处理台本是剧本开发层与制作层的边界——前提/结构/人物/对白归 sw-* 群；P0 完成后 `01-plan/story-bible.md` 冻结为 P0 存档，P1 起以本 skill 的资产图为准
 10. **冲突处理**：初始化只增不删；骨架目录与已有内容冲突时停下给"认领/改名/忽略"三选项，用户裁决后记入 `01-plan/` 备注，后续会话不再重复询问；`00-source/` 归位用户素材一律"复制 + 保留原件"
+11. **脚本-提示词一致性映射**：`03-prompts/shot-XX-vNNN.md` 与 `shotlist.md` 第 XX 行一一对应（镜号即文件名）；提示词的画面内容/运镜/时长必须与该行一致。leos 提示词导演的会话内纯文本在 pipeline 里一律物化为该版本化文件；要加戏先改 shotlist（P2 修订 + 登记），再递增提示词版本，禁止提示词单方面扩写
 
 ## 5 · 冲突裁决（写死，agent 不得自行裁量）
 
