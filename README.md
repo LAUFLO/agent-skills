@@ -26,11 +26,12 @@
 
 ### shortfilm-pipeline
 
-AI 短片 / 叙事视频制作工作流总编排 Skill：五阶段路由（P1 拆场 → P2 分镜锁定 → P3 提示词编写 → P4 生成与台账 → P5 审稿修复）、门禁检查与项目资产目录规则，按需调用 `leos-six-department-directing-team-skill-v1`（导演流程）与 `shortfilm-prompt`（提示词文法）两个子 Skill；单镜小任务可走快速通道。
+AI 短片 / 叙事视频制作工作流总编排 Skill：六阶段路由（P0 剧本开发 → P1 拆场 → P2 分镜锁定 → P3 提示词编写 → P4 生成与台账 → P5 审稿修复）、门禁检查与项目资产目录规则，按需调用 `sw-workflow` 及 sw-* 群（P0 剧本开发层）、`leos-six-department-directing-team-skill-v1`（导演流程）、`shortfilm-prompt`（提示词文法）子 Skill 群；单镜小任务可走快速通道。
 
+- P0 上游剧本开发：只有点子或粗糙剧本时，路由 `sw-workflow`（前提 → 结构 → 人物 → 场景清单 → 处理台本，剧集走 S0–S7 表）产出 `01-plan/script-draft.md`，P0 状态机 `01-plan/story-bible.md` 完成后冻结为存档
 - 阶段门禁：各阶段有明确产出目录（`00-source` 至 `05-review`）与出口条件，「阶段移交」行支持跨会话断点续接
 - 分镜三件套（subject-registry / atmosphere-lock / shotlist）为唯一真相源；参考图资产绑定编号、版本只增不改
-- 冲突裁决写死：提示词文法归 shortfilm-prompt，流程/审稿/台账归 leos，资产/门禁归本 skill；时长/画幅/分辨率只认用户明示
+- 冲突裁决写死：提示词文法归 shortfilm-prompt，流程/审稿/台账归 leos，剧本开发层归 sw-workflow，资产/门禁归本 skill；时长/画幅/分辨率只认用户明示
 
 ## 使用方式
 

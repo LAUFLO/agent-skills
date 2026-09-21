@@ -1,6 +1,6 @@
 ---
 name: shortfilm-pipeline
-description: AI 短片/叙事视频制作工作流总编排。负责阶段路由（P1 拆场 → P2 分镜锁定 → P3 提示词编写 → P4 生成与台账 → P5 审稿修复）、门禁检查、项目资产目录与版本规则。按需调用子 skill：leos 六部门（导演流程）与 shortfilm-prompt（提示词文法）。用户说"跑流程/继续/制作这个剧本"或进入 AI 短片项目时加载本 skill；小任务走快速通道。
+description: AI 短片/叙事视频制作工作流总编排。负责阶段路由（P0 剧本开发 → P1 拆场 → P2 分镜锁定 → P3 提示词编写 → P4 生成与台账 → P5 审稿修复）、门禁检查、项目资产目录与版本规则。按需调用子 skill：sw-workflow 及 sw-* 群（P0 剧本开发层）、leos 六部门（导演流程）、shortfilm-prompt（提示词文法）。用户说"跑流程/继续/制作这个剧本"或进入 AI 短片项目时加载本 skill；小任务走快速通道。
 ---
 
 # shortfilm-pipeline — AI 短片制作工作流总编排
@@ -10,15 +10,18 @@ description: AI 短片/叙事视频制作工作流总编排。负责阶段路由
 - 本 skill 只管：**阶段路由、门禁、资产规则、断点续接**。不自己写提示词、不自己拆场。
 - 拆场 / 表演 / 摄影 / 审稿 / 台账 → 子 skill `leos-six-department-directing-team-skill-v1`
 - 提示词文法（5 阶段结构 / 7 硬规则 / 负向提示词 / 模型坑位）→ 子 skill `shortfilm-prompt`
+- 剧本开发（前提/结构/人物/场景/对白工艺，P0 层）→ 子 skill `sw-workflow` 及其调度的 sw-* 群（含 `sw-series-engine-bible`、`sw-chinese-series-practice`）
 
 ## 1 · 前置检查（进入流程时做一次）
 
-1. 确认两个子 skill 的 ID 在当前会话可用（看 available skills 列表）。缺失则停下，输出安装指引——统一装进 OpenCode 原生全局 skills 目录 `C:\Users\Administrator\.config\opencode\skills\`：
+1. 确认子 skill 可用（看 available skills 列表）。缺失则停下，输出安装指引——统一装进 OpenCode 原生全局 skills 目录 `C:\Users\Administrator\.config\opencode\skills\`：
    - leos：`git clone https://github.com/MasterLeos/leos-six-department-directing-team-skill-v1`，整包放到 `C:\Users\Administrator\.config\opencode\skills\leos-six-department-directing-team-skill-v1\`（SKILL.md 必须位于该目录根部，目录名即 skill ID）
    - shortfilm-prompt：`git clone https://github.com/jnMetaCode/ai-shortfilm-prompts`，把仓库内 `skills/shortfilm-prompt/` 拷到 `C:\Users\Administrator\.config\opencode\skills\shortfilm-prompt\`，并把仓库 `templates/` 拷进该目录（模板路径是相对 SKILL.md 解析的）
+   - sw-* 子集（9 个）：`git clone https://github.com/jtydhr88/screenwriting-skills`，把仓库 `plugins/screenwriting/skills/` 下的 `sw-workflow`、`sw-premise-theme`、`sw-story-structure`、`sw-character-conflict`、`sw-dialogue`、`sw-scene-craft`、`sw-format-adaptation`、`sw-series-engine-bible`、`sw-chinese-series-practice` 九个整目录拷到 `C:\Users\Administrator\.config\opencode\skills\`（含各自 reference/terms 附属文件）
    - 装完需新开 OpenCode 会话（skill 在会话启动时被发现）
 2. 扫描当前项目目录判断入口阶段：
-   - 只有剧本（`00-source/` 或散落的脚本文件）→ **P1**
+   - 只有点子/粗糙剧本（`00-source/`），或已存在 `01-plan/story-bible.md` → **P0**
+   - 剧本已就绪（`01-plan/script-draft.md` 或用户提供了合格剧本）→ **P1**
    - 已有 `02-storyboard/` 三件套 → **P3**
    - 已有 `03-prompts/` 但 `04-takes/` 空 → **P4**
    - 已有 `04-takes/` 成片但无 `05-review/` → **P5**
@@ -28,7 +31,8 @@ description: AI 短片/叙事视频制作工作流总编排。负责阶段路由
 
 | 阶段 | 输入 | 加载的子 skill | 产出 | 门禁（全部满足才进下一阶段） |
 |---|---|---|---|---|
-| P1 拆场 | 剧本 | leos（总导演+场记） | `01-plan/scene-XX/brief.md`、`decisions.md` | 场次目的/主角/节奏/空间关系已锁定；用户逐场确认 |
+| P0 剧本开发 | 点子/粗糙剧本 | `sw-workflow`（按其阶段表：前提→结构→人物→场景清单→处理台本；剧集项目走 S0–S7 表，按需调 `sw-series-engine-bible`/`sw-chinese-series-practice`） | `01-plan/story-bible.md`（P0 单文件状态机）+ `01-plan/script-draft.md`（定稿分场大纲/处理台本） | P0 纪律跟 sw-workflow（创作主线不拆 subagent、一次性交付不建 bible、甲方格式优先）；每场有价值转折、人物/卡片数达标；用户确认"剧本够分镜了" |
+| P1 拆场 | 剧本（`01-plan/script-draft.md` 或用户提供） | leos（总导演+场记） | `01-plan/scene-XX/brief.md`、`decisions.md` | 场次目的/主角/节奏/空间关系已锁定；用户逐场确认 |
 | P2 分镜锁定 | 场次包 | leos（表演/镜内/摄影三部门简报）+ shortfilm-prompt 的 `templates/project-planner.md` | `02-storyboard/shotlist.md`、`subject-registry.md`、`atmosphere-lock.md`、`assets/manifest.md` | 主体登记每个复现角色 ≥2 瑕疵锚点；氛围段落定稿；shotlist 每镜 Exit/Entry 对齐；全片 ≤8 镜、单镜 ≤15s；参考图（如需）已产出并登记 manifest；用户确认可先生成首尾镜 |
 | P3 提示词编写 | 三件套 | shortfilm-prompt（5 阶段 + 7 硬规则） | `03-prompts/shot-XX-v001.md` | 每个提示词：主体描述从 subject-registry 复制、氛围段从 atmosphere-lock 复制；过 leos 校验脚本（若可用）+ shortfilm-prompt 30 秒清单；版本 vNNN 递增 |
 | P4 生成与台账 | 提示词 | leos（场记 Take 登记 + 局部修复原则） | `04-takes/shot-XX/` 素材 + `take-ledger.md` | 先生成首尾两镜锁观感，漂移即停；每镜登记提示词版本/Take 结论/耗时；重 roll 预算 ≈ 5–10 倍终选镜数 |
@@ -49,8 +53,11 @@ description: AI 短片/叙事视频制作工作流总编排。负责阶段路由
 
 ```
 my-film/
-├── 00-source/            # 原始剧本与参考资料，只读，不修改
-├── 01-plan/scene-XX/     # 场次包：brief.md（六部门方案）+ decisions.md（用户裁决）
+├── 00-source/            # 用户提供的原始素材（点子/粗糙剧本/参考素材），只读，不修改
+├── 01-plan/
+│   ├── scene-XX/         # 场次包：brief.md（六部门方案）+ decisions.md（用户裁决）
+│   ├── story-bible.md    # P0 状态机（sw-workflow 约定），P0 完成后冻结为存档
+│   └── script-draft.md   # P0 产出：定稿分场大纲/处理台本
 ├── 02-storyboard/        # 全片一份、镜头级更新的"分镜三件套"
 │   ├── shotlist.md       # 逐镜：景别/运镜/内容/Exit/Entry/时长
 │   ├── subject-registry.md   # 主体登记表：编号固定，全片不复用改号
@@ -75,6 +82,7 @@ my-film/
 6. **参考图绑定编号**：一张参考图只承担一个主要职责（角色↔Portrait 编号、场景↔场次编号）；改图走版本追加（v1→v2），同时更新 subject-registry 与引用该图的提示词版本
 7. **提示词引用**：需要参考图的镜头，提示词主体段写"参考上传图，100% 保留面部/服装"并指明 `manifest.md` 中的资产编号
 8. **输入/输出分离**：`02-storyboard/assets/` 只存喂给模型的参考图（输入端）；`04-takes/` 只存生成结果（输出端）；两边文件不互相挪动
+9. **P0 交接点**：分场大纲/处理台本是剧本开发层与制作层的边界——前提/结构/人物/对白归 sw-* 群；P0 完成后 `01-plan/story-bible.md` 冻结为 P0 存档，P1 起以本 skill 的资产图为准
 
 ## 5 · 冲突裁决（写死，agent 不得自行裁量）
 
@@ -83,6 +91,7 @@ my-film/
 3. 资产目录、命名、版本、门禁、阶段路由 → **本 skill** 说了算
 4. 时长/画幅/帧率/分辨率 → **只认用户明示**；未指定时询问，模板里的参考值仅供建议，不得自动填入
 5. 相机/镜头型号：先有摄影叙事动机（leos 摄影指导的设计结论），再按 shortfilm-prompt 把具体型号作为氛围段执行锚点写入；不得反向"先抄型号再补理由"
+6. 剧本开发层（P0 阶段表、story-bible 体例、会话协议、"甲方格式优先"）→ **sw-workflow 及 sw-* 群**说了算；pipeline 不越权改写其内部规则
 
 ## 6 · 会话与自动调用纪律
 
