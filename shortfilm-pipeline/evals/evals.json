@@ -1,0 +1,55 @@
+{
+  "skill_name": "shortfilm-pipeline",
+  "evals": [
+    {
+      "id": 1,
+      "name": "t1-full-entry",
+      "prompt": "跑流程，剧本在 00-source/script.md",
+      "expected": "自动初始化骨架；判定 P1 入口；按 templates/scene-brief.md 六节填充 01-plan/scene-XX/brief.md；产物末尾写「阶段移交」行；不建 story-bible（跳过 P0）",
+      "assertions": [
+        "01-plan/ 至 05-review/ 骨架目录存在",
+        "01-plan/scene-01/brief.md 存在且含 总导演/表演/镜内/摄影/连续性/裁决 六节",
+        "产出文件末尾含「阶段移交」行",
+        "未创建 01-plan/story-bible.md（剧本为完成品，跳 P0）"
+      ],
+      "files": ["evals/fixtures/T1/00-source/script.md"]
+    },
+    {
+      "id": 2,
+      "name": "t2-p0-routing",
+      "prompt": "我只有一个点子：废土机器人在面馆跳街舞，帮我把它做出来。",
+      "expected": "空项目判定 P0；加载 sw-workflow 开发剧本并建 01-plan/story-bible.md；不越级产出 03-prompts",
+      "assertions": [
+        "创建 01-plan/story-bible.md",
+        "显式加载并执行了 sw-workflow",
+        "未创建 03-prompts/ 内容"
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "t3-fast-lane",
+      "prompt": "帮我写个 10 秒的提示词：雨夜，一个废土风格的机器人撑着一把旧伞站在霓虹灯下。",
+      "expected": "快速通道 P3：产出 03-prompts/shot-01-v001.md，5 阶段结构（相机+镜头型号、呼吸感句、≥2 瑕疵、声音行、结尾留白）；跳过 P1/P2",
+      "assertions": [
+        "03-prompts/shot-01-v001.md 存在",
+        "含相机或镜头型号（IMAX/Panavision/Sony Venice/Kodak/Canon 至少其一）",
+        "含 breath-like/呼吸感 表述与声音行（No score / production audio 或中文等价）",
+        "未创建 02-storyboard/ 三件套"
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "t4-resume",
+      "prompt": "继续",
+      "expected": "在 T1 产物目录上：读「阶段移交」行 + 目录结构判定当前阶段（P1 完成→P2）；不重做 P0/P1；开始分镜锁定（三件套可跨会话分批，须注明留待项）",
+      "assertions": [
+        "基于 T1 with_skill 产物目录",
+        "创建 02-storyboard/shotlist.md（subject-registry/atmosphere-lock 可留待下轮，须在报告注明）",
+        "未新建/未改动 01-plan/story-bible.md"
+      ],
+      "files": ["复用 T1 with_skill 产物目录"]
+    }
+  ]
+}
