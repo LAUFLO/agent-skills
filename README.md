@@ -24,6 +24,14 @@
 
 核心机制：Frontier（待办）+ Gate（阻塞）+ Evidence（证据），配合进展信号规范，支持跨 `worktree` 与多项目复用。
 
+### shortfilm-pipeline
+
+AI 短片 / 叙事视频制作工作流总编排 Skill：五阶段路由（P1 拆场 → P2 分镜锁定 → P3 提示词编写 → P4 生成与台账 → P5 审稿修复）、门禁检查与项目资产目录规则，按需调用 `leos-six-department-directing-team-skill-v1`（导演流程）与 `shortfilm-prompt`（提示词文法）两个子 Skill；单镜小任务可走快速通道。
+
+- 阶段门禁：各阶段有明确产出目录（`00-source` 至 `05-review`）与出口条件，「阶段移交」行支持跨会话断点续接
+- 分镜三件套（subject-registry / atmosphere-lock / shotlist）为唯一真相源；参考图资产绑定编号、版本只增不改
+- 冲突裁决写死：提示词文法归 shortfilm-prompt，流程/审稿/台账归 leos，资产/门禁归本 skill；时长/画幅/分辨率只认用户明示
+
 ## 使用方式
 
 将目标 Skill 文件夹复制到本机 Skill 目录，例如：
