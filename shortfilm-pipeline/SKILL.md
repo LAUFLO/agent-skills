@@ -39,9 +39,9 @@ description: AI 短片/叙事视频制作工作流总编排。负责阶段路由
 |---|---|---|---|---|
 | P0 剧本开发 | 点子/粗糙剧本 | `sw-workflow`（按其阶段表：前提→结构→人物→场景清单→处理台本；剧集项目走 S0–S7 表，按需调 `sw-series-engine-bible`/`sw-chinese-series-practice`） | `01-plan/story-bible.md`（P0 单文件状态机）+ `01-plan/script-draft.md`（定稿分场大纲/处理台本） | P0 纪律跟 sw-workflow（创作主线不拆 subagent、一次性交付不建 bible、甲方格式优先）；每场有价值转折、人物/卡片数达标；用户确认"剧本够分镜了" |
 | P1 拆场 | 剧本（`01-plan/script-draft.md` 或用户提供） | leos（总导演+场记） | `01-plan/scene-XX/brief.md`、`decisions.md` | 场次目的/主角/节奏/空间关系已锁定；用户逐场确认 |
-| P2 分镜锁定 | 场次包 | leos（表演/镜内/摄影三部门简报）+ shortfilm-prompt 的 `templates/project-planner.md` | `02-storyboard/shotlist.md`、`subject-registry.md`、`atmosphere-lock.md`、`assets/manifest.md` | 主体登记每个复现角色 ≥2 瑕疵锚点；氛围段落定稿；shotlist 每镜 Exit/Entry 对齐；全片 ≤8 镜、单镜 ≤15s；参考图（如需）已产出并登记 manifest；用户确认可先生成首尾镜 |
+| P2 分镜锁定 | 场次包 | leos（表演/镜内/摄影三部门简报）+ shortfilm-prompt 的 `templates/project-planner.md` + `agnes-media-generator`（参考图生成） | `02-storyboard/shotlist.md`、`subject-registry.md`、`atmosphere-lock.md`、`assets/manifest.md` | 主体登记每个复现角色 ≥2 瑕疵锚点；氛围段落定稿；shotlist 每镜 Exit/Entry 对齐；全片 ≤8 镜、单镜 ≤15s；参考图（如需）按 §7 规格生成（定妆照 / 场景图五件套）、subagent 质检合格并登记 manifest；用户确认可先生成首尾镜 |
 | P3 提示词编写 | 三件套 | shortfilm-prompt（5 阶段 + 7 硬规则） | `03-prompts/shot-XX-v001.md` | 每个提示词：主体描述从 subject-registry 复制、氛围段从 atmosphere-lock 复制；过 leos 校验脚本（若可用）+ shortfilm-prompt 30 秒清单；版本 vNNN 递增 |
-| P4 生成与台账 | 提示词 | leos（场记 Take 登记 + 局部修复原则） | `04-takes/shot-XX/` 素材 + `take-ledger.md` | 先生成首尾两镜锁观感，漂移即停；每镜登记提示词版本/Take 结论/耗时；重 roll 预算 ≈ 5–10 倍终选镜数 |
+| P4 生成与台账 | 提示词 | leos（场记 Take 登记 + 局部修复原则）+ `agnes-media-generator`（Agnes Video 2.5 Flash，调用纪律见 §7） | `04-takes/shot-XX/` 素材 + `take-ledger.md` | 先生成首尾两镜锁观感，漂移即停；每镜登记提示词版本 / video_id / seconds / aspect_ratio / seed（如有）/ Take 结论；重 roll 预算 ≈ 5–10 倍终选镜数 |
 | P5 审稿修复 | 成片 | leos（六角色逐镜审稿） | `05-review/review.md` | 审稿表为「角色 × 镜头 1..N」全覆盖，无问题的镜头也写"通过"；每镜有 保/过/修/废 结论；"修"的镜头走局部修复（一次只改一个变量） |
 
 **执行纪律**：每阶段开始时用 `skill` 工具显式加载对应子 skill，不凭记忆操作；阶段内子 skill 的规则优先于本 skill。
@@ -99,9 +99,38 @@ my-film/
 4. 时长/画幅/帧率/分辨率 → **只认用户明示**；未指定时询问，模板里的参考值仅供建议，不得自动填入
 5. 相机/镜头型号：先有摄影叙事动机（leos 摄影指导的设计结论），再按 shortfilm-prompt 把具体型号作为氛围段执行锚点写入；不得反向"先抄型号再补理由"
 6. 剧本开发层（P0 阶段表、story-bible 体例、会话协议、"甲方格式优先"）→ **sw-workflow 及 sw-* 群**说了算；pipeline 不越权改写其内部规则
+7. 资产生产规格与 Agnes 调用纪律（§7）→ **本 skill** 说了算；引擎参数细节（API 端点、轮询策略、ffmpeg 命令）归 `agnes-media-generator` 本体
 
 ## 6 · 会话与自动调用纪律
 
 - 本流程由用户显式触发（"跑流程/继续/做这个剧本"）；子 skill 只在流程内被显式 `skill` 调用，避免 description 撞车抢跑
 - 每完成一个阶段输出小结（该阶段产出 + 门禁状态 + 下一段预告），再进下一阶段
 - 会话将中断时，先写好「阶段移交」行再收工
+
+## 7 · 资产生成规格与 Agnes 集成（P2 参考图 / P4 生成）
+
+默认引擎：图像与视频均经 `agnes-media-generator` skill（Agnes Image / Agnes Video 2.5 Flash）。
+
+### 定妆照规格（`assets/subjects/`）
+
+- 16:9 画幅：左侧为人物三视图，右侧为头部特写，背景纯色
+- 流程：文生图产出 → subagent 视觉质检合格 → 登记 `manifest.md`（编号绑定 Portrait）
+
+### 场景图规格（`assets/scenes/`，每场景五张一套）
+
+1. 文生图生成 1 张基准场景图
+2. 以基准图为参考，生成"往左转 90° / 往右转 90° / 背面"3 张（共 4 张）
+3. 4 张作参考，生成 1 张俯视全局图
+- 命名 `scene-XX-vN-01…05`（04/05 为第四视角与俯视）
+
+### 引擎调用纪律
+
+- 图生视频/关键帧的参考图（`images` / `first_frame`）：**直接用图像 API 返回的在线 URL**；本地生成的图片文件较大，禁止 Data URI 内嵌（避免 413）
+- 单段时长 4–12s、720P；>12s 的内容按分镜边界分段生成，段间用 reference/keyframe 锁一致性，ffmpeg 归一化后拼接（具体命令与坑位见 agnes-media-generator）
+- `take-ledger.md` 每 Take 记录：提示词版本 / video_id / seconds / aspect_ratio / seed（如用）
+
+### 资产图视觉质检（subagent 规则）
+
+- 需要"看图判断"定妆照/场景图是否合格时：**一律派 subagent 读图**（独立会话、图片计数清零，单个 subagent ≤4 张）；subagent 必须回文字结论（合格/不合格 + 哪张图 + 原因），主会话不直接读图
+- 一套 5 张时拆两批（3+2）派两个独立 subagent；**禁止**续同一 subagent 会话再读下一批（图片计数会累计超限）
+- 此条是全局"单会话 4 张图上限"规则在资产质检场景的执行规则
