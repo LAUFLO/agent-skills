@@ -35,16 +35,17 @@ description: 会话接续与项目控制面 skill，让新会话一秒接续。�
 - 2.4 阻塞 → `gates`（scope/resolve/blocked_todos）
 - 2.5 决策 → `lessons`
 - 2.6 统计消耗
-- 2.7 **进展确认（必须等待用户确认后才继续 3）**：展示 ✅terminal / 🚧gate / 🔄lessons / 📋剩余 frontier
+- 2.7 **进展确认（必须等待用户确认后才继续 3）**：展示 ✅terminal / 🚧gate / 🔄lessons / 📋剩余 frontier，并追问「下一会话聚焦什么」（handoff 式 argument-hint），用户回答写入 `state.json` 的 `next_focus` 字段；用户不答则写 `next_focus: null`
+- 2.8 **脱敏检查（落盘门禁，先于 3 执行）**：逐字段扫描将写入 `state.json` / `boot-packet.md` / `project_summary.md` / `evidence/` 的内容，命中 API key、密码、token、连接串、个人身份信息（手机号、身份证、私人邮箱）时，一律替换为占位符（如 `<REDACTED>`），并在 `evidence/` 记一条"已脱敏"的说明，不写明文
 
 ### 3. 更新 state.json（原子写）
 按 `phase` 编号与 `todo id` + `contentHash` 去重，`checkVersionConflict` 校验 `version`，`bumpVersion` 递增后原子写入。
 
 ### 4. 生成 boot-packet.md（500字内）
-含 phase goal、frontier、gates、evidence 摘要、按 `filterLessonsForBoot` 过滤的 3 条 lessons（按 frontier 关键词相关性）、设计约定、输入源摘要（实际读到什么写什么，不预设字段名）。`boot-packet.md` 是只读投影，禁止反写 `state.json`。
+含 phase goal、frontier、gates、evidence 摘要、按 `filterLessonsForBoot` 过滤的 3 条 lessons（按 frontier 关键词相关性）、设计约定、输入源摘要（实际读到什么写什么，不预设字段名）。`next_focus` 非空时，boot-packet 开头用 1-2 句点明「下一会话优先做什么」；其余内容凡 specs/plans/ADRs/issues/commits/diffs 已有者，只引用路径或 URL，不复述正文。`boot-packet.md` 是只读投影，禁止反写 `state.json`。
 
 ### 5. 生成 project_summary.md
-项目概览、结构、当前进度、已完成摘要、设计约定、输入源决策摘要（实际读到什么写什么）。`project_summary.md` 是只读投影，禁止反写 `state.json`。
+项目概览、结构、当前进度、已完成摘要（只列关键工件路径 + 一句话结论，不复述正文）、设计约定、输入源决策摘要（实际读到什么写什么）。`project_summary.md` 是只读投影，禁止反写 `state.json`。
 
 ### 6. 更新 AGENTS.md
 首行必须 `> **新会话启动时，请首先读取 .opencode/handover/boot-packet.md ...**`，含自动接续规则；如缺 `## 状态与工件路径约定` 则补上，不改动工作流描述原文。
@@ -53,6 +54,7 @@ description: 会话接续与项目控制面 skill，让新会话一秒接续。�
 - `state.json` 是唯一真相源；`boot-packet.md` / `project_summary.md` 是投影，只读派生。
 - 本 skill 不拥有工作流路由权，不硬编码任何工作流路径；路径一律来自 `AGENTS.md ## 状态与工件路径约定`。
 - `version` 冲突 fail-closed：先 `checkVersionConflict`，再 `bumpVersion` 原子写。
+- 敏感数据不落盘：API key、密码、token、连接串、个人身份信息在本 skill 管理的任何文件中只允许以占位符（`<REDACTED>`）形式出现，不出现明文。
 
 ## 进展信号规范
 - 完成：动作词 + 文件路径 + 验证方式，证据落 `evidence/{todo-id}_{描述}.{ext}`
