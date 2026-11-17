@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Handover state v2",
+  "type": "object",
+  "required": ["schema_version", "version", "updated_at", "phase", "frontier", "gates", "lessons", "next_focus", "suggested_next"],
+  "properties": {
+    "schema_version": {"type": "integer", "enum": [2]},
+    "version": {"type": "integer", "minimum": 0},
+    "updated_at": {"type": ["string", "null"]},
+    "phase": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/phase"}]},
+    "overview": {"type": ["string", "null"]},
+    "artifacts": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "frontier": {"type": "array", "items": {"$ref": "#/$defs/todo"}},
+    "gates": {"type": "array", "items": {"$ref": "#/$defs/gate"}},
+    "lessons": {"type": "array", "items": {"$ref": "#/$defs/lesson"}},
+    "next_focus": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/user_focus"}]},
+    "suggested_next": {"anyOf": [{"type": "null"}, {"$ref": "#/$defs/suggestion"}]}
+  },
+  "$defs": {
+    "phase": {
+      "type": "object", "required": ["id", "goal"],
+      "properties": {"id": {"type": ["string", "null"]}, "goal": {"type": ["string", "null"]}}
+    },
+    "todo": {
+      "type": "object", "required": ["id", "title", "status", "verification"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "title": {"type": "string", "minLength": 1},
+        "status": {"type": "string", "enum": ["pending", "in_progress", "implemented", "verified", "blocked", "cancelled"]},
+        "reason": {"type": ["string", "null"]},
+        "verification": {"$ref": "#/$defs/verification"}
+      }
+    },
+    "verification": {
+      "type": "object", "required": ["status"],
+      "properties": {
+        "status": {"type": "string", "enum": ["not_run", "passed", "failed"]},
+        "method": {"type": ["string", "null"]},
+        "evidence": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "gate": {
+      "type": "object", "required": ["id", "reason", "resolve", "blocked_todos"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "scope": {"type": ["string", "null"]},
+        "reason": {"type": "string", "minLength": 1},
+        "resolve": {"type": ["string", "null"]},
+        "blocked_todos": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "lesson": {
+      "type": "object", "required": ["id", "content", "category", "source"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "content": {"type": "string", "minLength": 1},
+        "category": {"type": "string", "enum": ["engineering", "procedure", "preference", "repo"]},
+        "source": {"type": "string", "enum": ["user", "observed", "agent", "legacy"]}
+      }
+    },
+    "user_focus": {
+      "type": "object", "required": ["text", "source", "basis"],
+      "properties": {
+        "text": {"type": "string", "minLength": 1},
+        "source": {"type": "string", "enum": ["user"]},
+        "basis": {"type": "string", "minLength": 1}
+      }
+    },
+    "suggestion": {
+      "type": "object", "required": ["text", "source", "basis"],
+      "properties": {
+        "text": {"type": "string", "minLength": 1},
+        "source": {"type": "string", "enum": ["agent", "legacy"]},
+        "basis": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
